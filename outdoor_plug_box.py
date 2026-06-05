@@ -45,6 +45,13 @@ MOUNT_TAB_W = 14.0
 MOUNT_TAB_H = 6.0
 MOUNT_HOLE_D = 5.5
 
+# ── Lid handle (bridge style — finger clearance underneath) ───────────────────
+HANDLE_SPAN = 48.0
+HANDLE_BAR_W = 12.0
+HANDLE_BAR_H = 10.0
+HANDLE_POST = 10.0
+HANDLE_CLEARANCE = 14.0
+
 OUTER_L = INTERNAL_L + 2 * WALL
 OUTER_W = INTERNAL_W + 2 * WALL
 BASE_H = WALL + INTERNAL_H
@@ -105,18 +112,20 @@ def _make_base() -> cq.Workplane:
     )
     base = base.cut(groove_outer.cut(groove_inner))
 
-    # Internal zip-tie strain relief slots near each cord entry
+    # Floor zip-tie channels near each cord entry (internal only — no rim breach)
     slot_w = CORD_D + 6
     slot_d = 3.0
+    slot_depth = 3.0
     for x_sign in (-1, 1):
         x = x_sign * (INTERNAL_L / 2 - 12)
-        base = (
-            base.faces(">Z")
-            .workplane()
+        channel = (
+            cq.Workplane("XY")
+            .workplane(offset=WALL + slot_depth)
             .center(x, 0)
             .rect(slot_w, slot_d)
-            .cutBlind(-8)
+            .extrude(slot_depth)
         )
+        base = base.cut(channel)
 
     # Mounting tabs on front/back
     tab_y = OUTER_W / 2
@@ -167,14 +176,28 @@ def _make_lid() -> cq.Workplane:
     )
     lid = lid.union(skirt_outer.cut(skirt_inner))
 
-    # Small vent bump on top center (optional visual cue for "this side up")
-    lid = (
-        lid.faces(">Z")
-        .workplane()
+    z_top = BASE_H + LID_TOP_H
+    half_span = HANDLE_SPAN / 2
+
+    for y in (-half_span, half_span):
+        post = (
+            cq.Workplane("XY")
+            .workplane(offset=z_top)
+            .center(0, y)
+            .rect(HANDLE_POST, HANDLE_POST)
+            .extrude(HANDLE_CLEARANCE)
+        )
+        lid = lid.union(post)
+
+    handle = (
+        cq.Workplane("XY")
+        .workplane(offset=z_top + HANDLE_CLEARANCE)
         .center(0, 0)
-        .circle(6)
-        .extrude(1.5)
+        .rect(HANDLE_BAR_W, HANDLE_SPAN + HANDLE_POST)
+        .extrude(HANDLE_BAR_H)
     )
+    handle = handle.edges("|Z").fillet(2)
+    lid = lid.union(handle)
 
     return lid
 

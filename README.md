@@ -42,7 +42,7 @@ python outdoor_plug_box.py --cord-d 16   # thicker Traeger cord jacket
 ### Assembly
 
 1. Lay the mated plugs in the base with cords exiting each end.
-2. Zip-tie cords in the internal slots for strain relief.
+2. Zip-tie cords into the shallow floor channels near each end for strain relief.
 3. Pack the lid gasket groove with 3 mm silicone cord or a bead of silicone caulk.
 4. Seal each cord entry with silicone (use the outer flare pocket).
 5. Mount with tabs (screw or zip-tie to deck/post). **Mount with the lid seam horizontal or slightly angled so water runs off**, not directly into the joint.
