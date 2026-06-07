@@ -2,8 +2,8 @@
 Build STLs for the under-bed vent kit.
 
 Usage:
-    python build.py mattress              # vent lift + corner pads (floor mattress)
-    python build.py vent-lift [--outlet left] [--split]
+    python build.py side-tower           # side vent, air blows up (recommended)
+    python build.py mattress --split     # vent under mattress (legacy)
     python build.py pad [--count 4]
     python build.py deflector [--outlet left] [--duct 100]
     python build.py riser [--height 64]
@@ -17,6 +17,7 @@ from pathlib import Path
 import deflector
 import pad
 import riser
+import side_tower
 import vent_lift
 from constants import OUTLET_SIDES
 
@@ -56,6 +57,9 @@ def main() -> None:
     p_riser.add_argument("--height", type=float, default=None)
     p_riser.add_argument("--leg-d", type=float, default=None)
 
+    p_tower = sub.add_parser("side-tower", help="Side vent tower — air blows up beside mattress")
+    p_tower.add_argument("--height", type=float, default=None, help="Tower height in mm (default 220)")
+
     args = parser.parse_args()
 
     if args.part == "mattress":
@@ -69,6 +73,8 @@ def main() -> None:
         deflector.export(args.output_dir, args.outlet, args.duct)
     elif args.part == "riser":
         riser.export(args.output_dir, args.height, args.leg_d)
+    elif args.part == "side-tower":
+        side_tower.export(args.output_dir, args.height)
 
 
 if __name__ == "__main__":

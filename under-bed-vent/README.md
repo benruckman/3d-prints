@@ -1,57 +1,53 @@
 # Under-bed vent kit
 
-Fix a floor vent blocked by a twin mattress (no bed frame).
+Floor vent is **10×4 in** (hardcoded in `constants.py`).
 
-## Floor mattress — print this
+## Side vent beside the bed — print this
 
-**3× vent lift pieces + 4× corner pads** (all ~3 in tall). Every piece fits a **256 mm** bed when laid flat.
+Vent is at the **edge** of the bed. This pulls air up through the floor register and blows it **straight up** beside the mattress. No screws — base halves friction-fit together, riser press-fits into the base.
 
 ```bash
 cd under-bed-vent
-python build.py mattress --split
-python build.py mattress --split --outlet left
+python build.py side-tower
+python build.py side-tower --height 200   # shorter tower
 ```
 
-| STL | Qty | Size (flat on bed) |
-|-----|-----|--------------------|
-| `mattress_pad.stl` | **4×** | 90 × 90 × 76 mm |
-| `mattress_vent_lift_left.stl` | **1×** | 135 × 200 × 76 mm |
-| `mattress_vent_lift_right.stl` | **1×** | 135 × 200 × 76 mm |
-| `mattress_vent_lift_duct.stl` | **1×** | 105 × 98 × 40 mm |
+| STL | Qty | Print orientation |
+|-----|-----|-------------------|
+| `side_tower_base_left.stl` | 1× | flat on bed |
+| `side_tower_base_right.stl` | 1× | flat on bed |
+| `side_tower_riser.stl` | 1× | **standing** (plug down) |
 
-**Assembly:** glue left + right at the center seam (alignment pegs built in), then glue the duct to the outer face of the right half. Lay every part **flat** (76 mm tall, not on end).
-
-Or build parts individually:
-
-```bash
-python build.py vent-lift [--outlet left] [--split]
-python build.py pad [--count 4]
-```
-
-## Bed with frame and legs
-
-```bash
-python build.py riser          # print 4×
-python build.py deflector      # optional air router on floor vent
-```
-
-## Layout (floor mattress)
+### Assembly
 
 ```
-     [pad] ────────────── [pad]
-        \                  /
-         \  [vent lift]   /
-        /                  \
-     [pad] ────────────── [pad]
+        ↑ air up (beside mattress)
+        │
+   ┌────┴────┐  riser — press into base
+   ├─────────┤  base (2 halves over vent)
+   ═══ vent ═══  floor
 ```
+
+1. Place both base halves over the floor vent opening (grille off). Long edge of vent along the bed.
+2. The **mattress-side edge** of the base (+Y in the model) faces the bed.
+3. Press the **riser** down into the socket on the base. The plug crosses the center seam and holds both halves in place.
+
+### In the room
+
+```
+  [mattress]
+       │
+       │  ↑ tower
+  ═════╪═════  base on floor vent (at bed edge)
+```
+
+## Legacy: vent under the mattress
+
+If the vent is directly under the mattress (not at the side), use `python build.py mattress --split` — see git history or older docs for screw-based assembly.
 
 ## Print settings
 
 | Part | Material | Infill |
 |------|----------|--------|
-| Vent lift | PETG | 50%+ |
-| Corner pads | PETG | 40%+ |
-| Deflector | PETG | 20% |
-| Bed risers | PETG | 40%+ |
-
-Vent opening is hardcoded to **10×4 in** in `constants.py`.
+| Side tower | PETG | 30%+ |
+| Corner pads (legacy) | PETG | 40%+ |
