@@ -4,7 +4,7 @@ Outdoor weather-resistant junction box for mated NEMA 5-15 plugs.
 Usage:
     python build.py
     python build.py --part base
-    python build.py --cord-d 16
+    python build.py --cord-slot-w 20
 """
 
 from __future__ import annotations
@@ -34,10 +34,17 @@ DRIP_OVERHANG = 4.0
 GASKET_W = 2.5
 GASKET_D = 2.0
 
-# ── Cord entries ─────────────────────────────────────────────────────────────
-CORD_D = 14.0
-CORD_Z = 22.0
-CORD_FLARE_D = 20.0
+# ── Cord entries (top slots — drop cord in from above, plug stays inside) ───
+CORD_SLOT_W = 10.0
+CORD_SLOT_DEPTH = 16.0
+
+# ── Drainage floor (slopes to one corner — orient that corner downhill) ───────
+DRAIN_X_SIGN = -1  # drain corner at -X; apex (high point) at +X
+DRAIN_Y_SIGN = -1  # drain corner at -Y; apex (high point) at +Y
+FLOOR_DRAIN_PEAK = 4.0
+FLOOR_MARGIN = 3.0
+DRAIN_HOLE_D = 8.0
+DRAIN_CORNER_INSET = 0.5
 
 # ── Mounting tabs ────────────────────────────────────────────────────────────
 MOUNT_TAB_W = 14.0
@@ -56,9 +63,50 @@ OUTER_W = INTERNAL_W + 2 * WALL
 BASE_H = WALL + INTERNAL_H
 
 
-def _cord_hole_z_local() -> float:
-    absolute_z = WALL + CORD_Z
-    return absolute_z - BASE_H / 2
+def _cut_cord_slots(base: cq.Workplane) -> cq.Workplane:
+    """U-notch in each end wall, open at the top, for dropping cords in."""
+    for x_sign in (-1, 1):
+        x = x_sign * (INTERNAL_L / 2 + WALL / 2)
+        slot = (
+            cq.Workplane("XY")
+            .workplane(offset=BASE_H + 0.01)
+            .center(x, 0)
+            .rect(WALL + 2, CORD_SLOT_W)
+            .extrude(-(CORD_SLOT_DEPTH + 0.02))
+        )
+        base = base.cut(slot)
+    return base
+
+
+def _add_sloped_floor(base: cq.Workplane) -> cq.Workplane:
+    """Sloped floor — high at the corner opposite the drain."""
+    inner_l = INTERNAL_L - FLOOR_MARGIN
+    inner_w = INTERNAL_W - FLOOR_MARGIN
+    apex_x = -DRAIN_X_SIGN * (inner_l / 2 - 1)
+    apex_y = -DRAIN_Y_SIGN * (inner_w / 2 - 1)
+    floor = (
+        cq.Workplane("XY")
+        .workplane(offset=WALL)
+        .rect(inner_l, inner_w)
+        .workplane(offset=FLOOR_DRAIN_PEAK)
+        .center(apex_x, apex_y)
+        .rect(0.01, 0.01)
+        .loft(combine=True)
+    )
+    return base.union(floor)
+
+
+def _cut_drain_hole(base: cq.Workplane) -> cq.Workplane:
+    x = DRAIN_X_SIGN * (INTERNAL_L / 2 - DRAIN_CORNER_INSET)
+    y = DRAIN_Y_SIGN * (INTERNAL_W / 2 - DRAIN_CORNER_INSET)
+    hole = (
+        cq.Workplane("XY")
+        .workplane(offset=WALL + 0.5)
+        .center(x, y)
+        .circle(DRAIN_HOLE_D / 2)
+        .extrude(-(WALL + 2))
+    )
+    return base.cut(hole)
 
 
 def _make_base() -> cq.Workplane:
@@ -71,23 +119,9 @@ def _make_base() -> cq.Workplane:
         .cutBlind(-INTERNAL_H)
     )
 
-    z_local = _cord_hole_z_local()
-
-    for face in ("<X", ">X"):
-        base = (
-            base.faces(face)
-            .workplane(centerOption="CenterOfMass")
-            .center(0, z_local)
-            .circle(CORD_D / 2)
-            .cutThruAll()
-        )
-        base = (
-            base.faces(face)
-            .workplane(centerOption="CenterOfMass")
-            .center(0, z_local)
-            .circle(CORD_FLARE_D / 2)
-            .cutBlind(-4)
-        )
+    base = _cut_cord_slots(base)
+    base = _add_sloped_floor(base)
+    base = _cut_drain_hole(base)
 
     groove_outer = (
         cq.Workplane("XY")
@@ -103,7 +137,7 @@ def _make_base() -> cq.Workplane:
     )
     base = base.cut(groove_outer.cut(groove_inner))
 
-    slot_w = CORD_D + 6
+    slot_w = CORD_SLOT_W + 4
     slot_d = 3.0
     slot_depth = 3.0
     for x_sign in (-1, 1):
@@ -183,11 +217,10 @@ def _make_lid() -> cq.Workplane:
     return lid
 
 
-def export(part: str, output_dir: Path, cord_d: float | None = None) -> None:
-    global CORD_D, CORD_FLARE_D
-    if cord_d is not None:
-        CORD_D = cord_d
-        CORD_FLARE_D = CORD_D + 6
+def export(part: str, output_dir: Path, cord_slot_w: float | None = None) -> None:
+    global CORD_SLOT_W
+    if cord_slot_w is not None:
+        CORD_SLOT_W = cord_slot_w
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -214,9 +247,14 @@ def main() -> None:
         type=Path,
         default=DEFAULT_OUTPUT,
     )
-    parser.add_argument("--cord-d", type=float, default=None)
+    parser.add_argument(
+        "--cord-slot-w",
+        type=float,
+        default=None,
+        help="Width of top cord slot in mm (default 18)",
+    )
     args = parser.parse_args()
-    export(args.part, args.output_dir, cord_d=args.cord_d)
+    export(args.part, args.output_dir, cord_slot_w=args.cord_slot_w)
 
 
 if __name__ == "__main__":
